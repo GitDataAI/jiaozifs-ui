@@ -4,6 +4,7 @@ import RefDropdown from "../../../../../lib/components/repository/refDropdown";
 import {
     ActionGroup,
     ActionsBar,
+    AlertError,
     Loading,
 } from "../../../../../lib/components/controls";
 import {useRefs} from "../../../../../lib/hooks/repo";
@@ -17,13 +18,14 @@ import { Link } from "../../../../../lib/components/nav";
 import { cache } from "../../../../../lib/api";
 import { ActivepageContext } from "../../../../../lib/hooks/conf";
 import { repos } from "../../../../../lib/api/interface";
+import { useAPI } from "../../../../../lib/hooks/api";
 
 
 const ObjectsBrowser = () => {
   const router = useRouter();
   const { path, after, importDialog,commitId} = router.query ;
   const { repo, reference, loading, error } = useRefs();  
-  
+  const [err,setErr] = useState<Error | null>(null)
   const [showUpload, setShowUpload] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [filepath,setFilepath] = useState(path);
@@ -35,7 +37,7 @@ const ObjectsBrowser = () => {
   const refresh = () => setRefreshToken(!refreshToken);
   const [ZipSrc, setZipSrc] = useState<string>('');
   const [CarSrc, setCarSrc] = useState<string>('');
-
+  
   const parts = (path && path.split("/")) || [];
   let searchPrefix = parts.join("/");
   const user = cache.get('user')
@@ -43,13 +45,14 @@ const ObjectsBrowser = () => {
   const ShowTagForm=()=>{
     setShow(!show)
   }
-  const handleSubmit=async ()=>{
-    await repos.createTag(user,repo.name,{
-      name:TagName,
-      target:TagType,
-      message:TagMessage
-    })
+  const handleSubmit= async ()=>{
+   await repos.createTag(user,repo.name,{name:TagName,target:TagType,message:TagMessage}).then(()=>{
     ShowTagForm()
+   }).catch((err)=>{
+      setErr(err)
+   })
+   console.log(err);
+
   }
   useEffect(() => {
     const fetchImage = async () => {
@@ -179,7 +182,7 @@ const ObjectsBrowser = () => {
                 repoId: repo.name,
                 user
               },
-              query: { ref:ref.id},
+              query: { ref:ref.id,type: ref.type},
             })} onCancel={undefined}          
             />
         </ActionGroup>
@@ -201,6 +204,7 @@ const ObjectsBrowser = () => {
 
                 </Dropdown.Menu>
           </Dropdown>
+{  reference.type !=='tag'  &&   <>
         <Button
         variant={"light"}
         >
@@ -217,7 +221,8 @@ const ObjectsBrowser = () => {
         >
         <UploadIcon />Create Tag
         </Button>
-          
+        </> 
+          }
         </ActionGroup>
       </ActionsBar>
 
@@ -296,8 +301,8 @@ const ObjectsBrowser = () => {
      
       </Row>
     </Form>
-    
-            </Modal.Body>
+    { err &&  <AlertError error={err} />}
+      </Modal.Body>
             <Modal.Footer>
             <Button variant="secondary" onClick={(e) => {
                 e.preventDefault();

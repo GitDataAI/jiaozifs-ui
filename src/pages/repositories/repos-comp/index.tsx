@@ -17,7 +17,7 @@ import { Repository } from "../../../lib/api/interface/Api";
 type Order = 'asc' | 'desc';
 type SortBy = 'name' | 'created_at';
 dayjs.extend(relativeTime);
-
+let rArr:Repository[] = []
 export const CreateRepositoryButton: React.FC<CreateRepositoryButtonProps> = ({variant = "success", enabled = false, onClick,word= 'New Repository',style={}}) => {
     return (
         <Button variant={variant} disabled={!enabled} onClick={onClick} style={style}>
@@ -62,6 +62,7 @@ export const RepositoryList = ({refresh,setRepoAmount,search,filter='',sortBy,or
         }
         let sortField;
         if (sortBy == "name") {
+            sortField = "name" 
         } else if (sortBy == "created_at") {
             sortField = "created_at"; 
         } else {
@@ -76,8 +77,8 @@ export const RepositoryList = ({refresh,setRepoAmount,search,filter='',sortBy,or
         }
     
         return data.sort((a, b) => {
-            const valueA = a[sortField];
-            const valueB = b[sortField];
+            const valueA =sortBy=="name"? a[sortField].toLowerCase() : a[sortField];
+            const valueB =sortBy=="name"? b[sortField].toLowerCase() : b[sortField];
             if (valueA < valueB) {
                 return -sortOrder;
             } else if (valueA > valueB) {
@@ -87,9 +88,9 @@ export const RepositoryList = ({refresh,setRepoAmount,search,filter='',sortBy,or
         });
     }
     useEffect(()=>{
-        sortData(repoArr,order,sortBy)     
-        setRepoArr(repoArr)   
-    }, [refresh,search,filter,sortBy,order])
+        rArr  && sortData(rArr,order,sortBy)
+        setRepoArr(rArr)   
+    }, [rArr,refresh,search,filter,sortBy,order])
 
     const Storage = ({storage})=>{
         return(
@@ -109,7 +110,7 @@ export const RepositoryList = ({refresh,setRepoAmount,search,filter='',sortBy,or
                         })
                     }
                     setRepoAmount(results.data.results.length)
-                    setRepoArr(results.data.results)
+                    rArr=results.data.results
                     return results
                 })
         }, [refresh,search,filter]);
